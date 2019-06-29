@@ -8,17 +8,17 @@
     },
     "autoload": {
     	"psr-4": {
-    		"Hailkongsan\\AntiBotLink": "src/"
+    		"Hailkongsan\\AntiBotLink\\": "src/"
     	}
     },
     "extra": {
 	    "laravel": {
-	        "providers": [
-	            "Hailkongsan\\AntiBotLink\\AntiBotLinkServiceProvider"
-	        ],
-	        "aliases": {
-	            "AntiBotLink": "Hailkongsan\\AntiBotLink\\Facades\\AntiBotLink"
+            "providers": [
+                "Hailkongsan\\AntiBotLink\\AntiBotLinkServiceProvider"
+            ],
+            "aliases": {
+                "AntiBotLink": "Hailkongsan\\AntiBotLink\\Facades\\AntiBotLink"
 	        }
-	    }
-	}
+        }
+    }
 }
