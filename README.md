@@ -3,7 +3,7 @@
 ## Installation
 
 ```
-	composer require hailkongsan/laravel-antibotlink
+composer require hailkongsan/laravel-antibotlink
 ```
 
 ### Setup
@@ -31,8 +31,8 @@ php artisan vendor:publish --tag=config,public,resource
 #### Validation
 ```php
 $validate = Validator::make(Input::all(), [
-		'antibotlink' => 'required|antibotlink'
-	]);
+	'antibotlink' => 'required|antibotlink'
+]);
 ```
 ##### Custom Validation Message
 Add the following values to the `custom` array in the `validation` language file :
