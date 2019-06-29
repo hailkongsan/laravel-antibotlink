@@ -4,21 +4,21 @@
     "license": "MIT",
     "minimum-stability": "dev",
     "require": {
-    	"intervention/image": "2.5.*"
+        "intervention/image": "^2.5.*"
     },
     "autoload": {
-    	"psr-4": {
-    		"Hailkongsan\\AntiBotLink\\": "src/"
-    	}
+        "psr-4": {
+            "Hailkongsan\\AntiBotLink\\": "src/"
+        }
     },
     "extra": {
-	    "laravel": {
+        "laravel": {
             "providers": [
                 "Hailkongsan\\AntiBotLink\\AntiBotLinkServiceProvider"
             ],
             "aliases": {
                 "AntiBotLink": "Hailkongsan\\AntiBotLink\\Facades\\AntiBotLink"
-	        }
+            }
         }
     }
 }
