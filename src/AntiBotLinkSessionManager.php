@@ -7,12 +7,12 @@ use Illuminate\Session\Store;
 class AntiBotLinkSessionManager
 {
     /**
-	 * The Laravel session instace
-	 * 
-	 * @var \Illuminate\Session\Store
-	 */
+     * The Laravel session instace.
+     *
+     * @var \Illuminate\Session\Store
+     */
     protected $session;
-    
+
     protected $key;
 
     public function __construct()
@@ -61,7 +61,7 @@ class AntiBotLinkSessionManager
     }
 
     /**
-     * Get session key prefix
+     * Get session key prefix.
      *
      * @return string
      */

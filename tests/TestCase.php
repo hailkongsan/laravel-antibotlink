@@ -16,7 +16,7 @@ abstract class TestCase extends Orchestra
     protected function getPackageAliases($app)
     {
         return [
-            'AntiBotLink' => 'Hailkongsan\AntiBotLink\Facades\AntiBotLink'
+            'AntiBotLink' => 'Hailkongsan\AntiBotLink\Facades\AntiBotLink',
         ];
     }
 }

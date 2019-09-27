@@ -6,7 +6,6 @@ use Carbon\Carbon;
 use Hailkongsan\AntiBotLink\AntiBotLink;
 use Intervention\Image\ImageManagerStatic;
 use Hailkongsan\AntiBotLink\AntiBotLinkSessionManager;
-use Illuminate\Support\Facades\Session;
 
 /**
  * @todo Add more test.

@@ -18,7 +18,7 @@ class SessionManagerTest extends TestCase
         $this->session = new AntiBotLinkSessionManager();
 
         $this->assertInstanceOf(Store::class, $this->session->getInstance());
-        
+
         $this->assertEquals(config('antibotlink.session_key'), $this->session->getKey());
     }
 }

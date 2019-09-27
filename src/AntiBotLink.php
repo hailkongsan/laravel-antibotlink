@@ -2,117 +2,117 @@
 
 namespace Hailkongsan\AntiBotLink;
 
-use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Support\Arr;
+use Intervention\Image\ImageManagerStatic as Image;
 
 class AntiBotLink
 {
-	/**
-	 * The Laravel session instace
-	 * 
-	 * @var \Hailkongsan\AntiBotLink\AntiBotLinkSessionManager
-	 */
-	protected $session;
+    /**
+     * The Laravel session instace.
+     *
+     * @var \Hailkongsan\AntiBotLink\AntiBotLinkSessionManager
+     */
+    protected $session;
 
-	/**
-	 * The Image instace
-	 * 
-	 * @var Intervention\Image\ImageManagerStatic
-	 */
-	protected $image;
+    /**
+     * The Image instace.
+     *
+     * @var Intervention\Image\ImageManagerStatic
+     */
+    protected $image;
 
-	/**
-	 * Font path
-	 * 
-	 * @var string
-	 */
-	protected $font;
+    /**
+     * Font path.
+     *
+     * @var string
+     */
+    protected $font;
 
-	/**
-	 * AntiBotLink data
-	 * 
-	 * @var array
-	 */
-	protected $abl = [];
+    /**
+     * AntiBotLink data.
+     *
+     * @var array
+     */
+    protected $abl = [];
 
-	public function __construct()
-	{
-		$this->session = app(AntiBotLinkSessionManager::class);
-		$this->image = app(Image::class);
+    public function __construct()
+    {
+        $this->session = app(AntiBotLinkSessionManager::class);
+        $this->image = app(Image::class);
 
-		$this->font = $this->getFontPath();
-		$this->abl = $this->session->get('', []);
-	}
+        $this->font = $this->getFontPath();
+        $this->abl = $this->session->get('', []);
+    }
 
-	/**
-	 * Generate captcha
-	 * 
-	 * @param  boolean $force 
-	 * @return boolean
-	 */
-	public function generate($force = false)
-	{
-		if (!$force && !$this->shouldGenerate()) {
-			return true;
-		}
+    /**
+     * Generate captcha.
+     *
+     * @param  bool $force
+     * @return bool
+     */
+    public function generate($force = false)
+    {
+        if (! $force && ! $this->shouldGenerate()) {
+            return true;
+        }
 
-		$words = $this->getWords();
-		$this->abl['data'] = $this->generateRandomQuestionAndAnswer($words);
+        $words = $this->getWords();
+        $this->abl['data'] = $this->generateRandomQuestionAndAnswer($words);
 
-		$this->abl['links'] = $this->drawAnswer(Arr::pluck($this->abl['data'], 'answer'));
+        $this->abl['links'] = $this->drawAnswer(Arr::pluck($this->abl['data'], 'answer'));
 
-		$this->abl['question'] = $this->drawQuestion(implode(',', Arr::pluck($this->abl['data'], 'question')));
-		
-		$this->session->put([
-			'data' => $this->abl['data'],
-			'links' => $this->getLinks(),
-			'question' => (string) $this->abl['question'],
-			'solution' => trim(implode(' ', Arr::pluck($this->abl['data'], 'solution'))),
-			'expire_at' => now()->addSeconds(config('antibotlink.expire', 120)),
-		]);
+        $this->abl['question'] = $this->drawQuestion(implode(',', Arr::pluck($this->abl['data'], 'question')));
 
-		return true;
-	}
+        $this->session->put([
+            'data' => $this->abl['data'],
+            'links' => $this->getLinks(),
+            'question' => (string) $this->abl['question'],
+            'solution' => trim(implode(' ', Arr::pluck($this->abl['data'], 'solution'))),
+            'expire_at' => now()->addSeconds(config('antibotlink.expire', 120)),
+        ]);
 
-	protected function shouldGenerate()
-	{
-		return $this->isExpired()
-			|| !$this->session->has()
-			|| !$this->session->has('links')
-			|| !$this->session->has('question')
-			|| !$this->session->has('solution')
-			|| count($this->session->get('links')) != config('antibotlink.links');
-	}
+        return true;
+    }
 
-	public function verify($solution): bool
-	{
-		if ($this->isExpired() || empty($solution)) {
-			return false;
-		}
+    protected function shouldGenerate()
+    {
+        return $this->isExpired()
+            || ! $this->session->has()
+            || ! $this->session->has('links')
+            || ! $this->session->has('question')
+            || ! $this->session->has('solution')
+            || count($this->session->get('links')) != config('antibotlink.links');
+    }
 
-		if ($solution === $this->session->get('solution')) {
-			$this->session->clear();
+    public function verify($solution): bool
+    {
+        if ($this->isExpired() || empty($solution)) {
+            return false;
+        }
 
-			return true;
-		}
+        if ($solution === $this->session->get('solution')) {
+            $this->session->clear();
 
-		return false;
-	}
+            return true;
+        }
 
-	protected function isExpired()
-	{
-		$time = $this->session->get('expire_at');
+        return false;
+    }
 
-		if (!$time || now() > $time) {
-			return true;
-		}
+    protected function isExpired()
+    {
+        $time = $this->session->get('expire_at');
 
-		return false;
-	}
+        if (! $time || now() > $time) {
+            return true;
+        }
 
-	public function renderJS($form_selector, $name = 'antibotlink')
-	{
-		$js = '
+        return false;
+    }
+
+    public function renderJS($form_selector, $name = 'antibotlink')
+    {
+        $js = '
 		<script>
 			(function ()
 			{
@@ -178,244 +178,237 @@ class AntiBotLink
 			})();
 		</script>
 		';
-		return $js;
-	}
 
-	/**
-	 * 
-	 * 
-	 * @param  [type] $offset [description]
-	 * @param  array  $class  [description]
-	 * @return [type]         [description]
-	 */
-	public function renderLink($offset, $class = [])
-	{
-		$class[] = 'antibotlink';
-		$solution = $this->abl['data'][$offset]['solution'];
+        return $js;
+    }
 
-		$link = $this->getLink($offset);
+    /**
+     * @param  [type] $offset [description]
+     * @param  array  $class  [description]
+     * @return [type]         [description]
+     */
+    public function renderLink($offset, $class = [])
+    {
+        $class[] = 'antibotlink';
+        $solution = $this->abl['data'][$offset]['solution'];
 
-		return '<img class="'.implode(' ', $class).'" src="'.$link.'" data-abl-solution="'.$solution.'">';
-	}
+        $link = $this->getLink($offset);
 
-	/**
-	 *
-	 * 
-	 * @param  [type] $question [description]
-	 * @return string
-	 */
-	protected function drawQuestion($question)
-	{
-		$color = $this->generateColor();
-		$width = $this->getWidth(strlen($question));
-		$x = (int) $width / 2;
-		$y = 13;
+        return '<img class="'.implode(' ', $class).'" src="'.$link.'" data-abl-solution="'.$solution.'">';
+    }
 
-		$image = $this->image->canvas($width, $y * 2)
-			->text($question, $x, $y, function($font) use ($color) {
-				$font->file($this->font);
-				$font->size(20);
-				$font->color($color);
-			    $font->align('center');
-			    $font->valign('middle');
-			});
+    /**
+     * @param  [type] $question [description]
+     * @return string
+     */
+    protected function drawQuestion($question)
+    {
+        $color = $this->generateColor();
+        $width = $this->getWidth(strlen($question));
+        $x = (int) $width / 2;
+        $y = 13;
 
-		if (config('antibotlink.noise')) {
-				for ($i = 0; $i < strlen($question) * 3; $i++) {
-					$x = mt_rand(4, $width - 4);
-					$y = mt_rand(3, 40 - 3);
-					$image->line(
-						$x,
-						$y,
-						$x + mt_rand(-4, 4),
-						$y + mt_rand(-3, 3),
-						function($image) use ($color) {
-							$image->color($color);
-						}
-					);
-				}	
-			}
-		$this->abl['data']['question_width'] = $width;
+        $image = $this->image->canvas($width, $y * 2)
+            ->text($question, $x, $y, function ($font) use ($color) {
+                $font->file($this->font);
+                $font->size(20);
+                $font->color($color);
+                $font->align('center');
+                $font->valign('middle');
+            });
 
-		return (string) $image->encode('data-url');
-	}
+        if (config('antibotlink.noise')) {
+            for ($i = 0; $i < strlen($question) * 3; $i++) {
+                $x = mt_rand(4, $width - 4);
+                $y = mt_rand(3, 40 - 3);
+                $image->line(
+                        $x,
+                        $y,
+                        $x + mt_rand(-4, 4),
+                        $y + mt_rand(-3, 3),
+                        function ($image) use ($color) {
+                            $image->color($color);
+                        }
+                    );
+            }
+        }
+        $this->abl['data']['question_width'] = $width;
 
-	/**
-	 * [getLink description]
-	 * @param  [type] $offset [description]
-	 * @return [type]         [description]
-	 */
-	public function getLink($offset)
-	{
-		if (Arr::has($this->abl, 'links.' . $offset)) {
-			return (string) $this->abl['links'][$offset];
-		}
+        return (string) $image->encode('data-url');
+    }
 
-		return null;
-	}
-	/**
-	 * [getLinks description]
-	 * @return [type] [description]
-	 */
-	public function getLinks()
-	{
-		if (Arr::has($this->abl, 'links')) {
-			return $this->abl['links'];
-		}
+    /**
+     * [getLink description].
+     * @param  [type] $offset [description]
+     * @return [type]         [description]
+     */
+    public function getLink($offset)
+    {
+        if (Arr::has($this->abl, 'links.'.$offset)) {
+            return (string) $this->abl['links'][$offset];
+        }
+    }
 
-		return [];
-	}
+    /**
+     * [getLinks description].
+     * @return [type] [description]
+     */
+    public function getLinks()
+    {
+        if (Arr::has($this->abl, 'links')) {
+            return $this->abl['links'];
+        }
 
-	/**
-	 * [getInstruction description]
-	 * @return [type] [description]
-	 */
-	public function renderInstruction()
-	{
-		$img_url = $this->abl['question'];
+        return [];
+    }
 
-		$width = $this->abl['data']['question_width'];
+    /**
+     * [getInstruction description].
+     * @return [type] [description]
+     */
+    public function renderInstruction()
+    {
+        $img_url = $this->abl['question'];
 
-		$instruction = config('antibotlink.captcha_instruction');
+        $width = $this->abl['data']['question_width'];
 
-		$instruction = str_replace(':instruction',
-				trans('antibotlink::messages.instruction'), $instruction);
+        $instruction = config('antibotlink.captcha_instruction');
 
-		$instruction = str_replace(':image', 
-				'<img src="'.$img_url.'" width="'.$width.'">', $instruction);
+        $instruction = str_replace(':instruction',
+                trans('antibotlink::messages.instruction'), $instruction);
 
-		return $instruction;
-	}
+        $instruction = str_replace(':image',
+                '<img src="'.$img_url.'" width="'.$width.'">', $instruction);
 
-	/**
-	 * 
-	 */
-	protected function generateRandomQuestionAndAnswer($words)
-	{
-		$result = [];
+        return $instruction;
+    }
 
-		foreach ($this->shuffleAssoc($words) as $question => $answer) {
-			if (count($result) >= config('antibotlink.links')) {
-				break;
-			}
+    protected function generateRandomQuestionAndAnswer($words)
+    {
+        $result = [];
 
-			$result[] = [
-				'question' => $question,
-				'answer' => $answer,
-				'solution' => mt_rand(1000, 9999)
-			];
-		}
+        foreach ($this->shuffleAssoc($words) as $question => $answer) {
+            if (count($result) >= config('antibotlink.links')) {
+                break;
+            }
 
-		return $result;
-	}
+            $result[] = [
+                'question' => $question,
+                'answer' => $answer,
+                'solution' => mt_rand(1000, 9999),
+            ];
+        }
 
-	/**
-	 * [getWords description]
-	 * @return [type] [description]
-	 */
-	protected function getWords()
-	{
-		$words = config('antibotlink.words');
-		return Arr::random($words);
-	}
+        return $result;
+    }
 
-	/**
-	 * [drawImage description]
-	 * @return [type] [description]
-	 */
-	protected function drawAnswer($answers)
-	{
-		$images = [];
+    /**
+     * [getWords description].
+     * @return [type] [description]
+     */
+    protected function getWords()
+    {
+        $words = config('antibotlink.words');
 
-		foreach ($answers as $answer) {
-			$color = $this->generateColor();
-			$width = $this->getWidth(strlen($answer));
-			$x = (int) $width / 2;
-			$y = 20;
-			$image = $this->image->canvas($width, 40)
-				->text($answer, $x, $y, function($font) use ($color) {
-					$font->file($this->font);
-					$font->size(mt_rand(20, 24));
-					$font->color($color);
-				    $font->align('center');
-				    $font->valign('middle');
-				    $font->angle(mt_rand(-20, 20));
-				});
+        return Arr::random($words);
+    }
 
-			if (config('antibotlink.noise')) {
-				for ($i = 0; $i < mt_rand(10, 25); $i++) {
-					$x = mt_rand(4, $width - 4);
-					$y = mt_rand(3, 40 - 3);
-					$image->line(
-						$x,
-						$y,
-						$x + mt_rand(-4, 4),
-						$y + mt_rand(-3, 3),
-						function($image) use ($color) {
-							$image->color($color);
-						}
-					);
-				}
-			}
+    /**
+     * [drawImage description].
+     * @return [type] [description]
+     */
+    protected function drawAnswer($answers)
+    {
+        $images = [];
 
-			$images[] = (string) $image->encode('data-url');
-		}
+        foreach ($answers as $answer) {
+            $color = $this->generateColor();
+            $width = $this->getWidth(strlen($answer));
+            $x = (int) $width / 2;
+            $y = 20;
+            $image = $this->image->canvas($width, 40)
+                ->text($answer, $x, $y, function ($font) use ($color) {
+                    $font->file($this->font);
+                    $font->size(mt_rand(20, 24));
+                    $font->color($color);
+                    $font->align('center');
+                    $font->valign('middle');
+                    $font->angle(mt_rand(-20, 20));
+                });
 
-		return $images;
-	}
+            if (config('antibotlink.noise')) {
+                for ($i = 0; $i < mt_rand(10, 25); $i++) {
+                    $x = mt_rand(4, $width - 4);
+                    $y = mt_rand(3, 40 - 3);
+                    $image->line(
+                        $x,
+                        $y,
+                        $x + mt_rand(-4, 4),
+                        $y + mt_rand(-3, 3),
+                        function ($image) use ($color) {
+                            $image->color($color);
+                        }
+                    );
+                }
+            }
 
-	protected function getFontPath()
-	{
-		$path = __DIR__.'/assets/fonts';
-		$font = Arr::random(array_diff(scandir($path), ['..', '.']));
+            $images[] = (string) $image->encode('data-url');
+        }
 
-		return $path . DIRECTORY_SEPARATOR . pathinfo($font, PATHINFO_BASENAME);
-	}
+        return $images;
+    }
 
-	protected function getWidth($length)
-	{
-		$length = $length == 1 ? $length + 1 : $length;
+    protected function getFontPath()
+    {
+        $path = __DIR__.'/assets/fonts';
+        $font = Arr::random(array_diff(scandir($path), ['..', '.']));
 
-		return ($length + 2) * 11;
-	}
+        return $path.DIRECTORY_SEPARATOR.pathinfo($font, PATHINFO_BASENAME);
+    }
 
-	/**
-	 * Generate RGB color
-	 * 
-	 * @return array
-	 */
-	protected function generateColor()
-	{
-		return [
-			mt_rand(5, 50),
-			mt_rand(5, 50),
-			mt_rand(5, 50)
-		];
-	}
+    protected function getWidth($length)
+    {
+        $length = $length == 1 ? $length + 1 : $length;
 
-	public function getSession()
-	{
-		return $this->session;
-	}
+        return ($length + 2) * 11;
+    }
 
-	public function getImageInstance()
-	{
-		return $this->image;
-	}
+    /**
+     * Generate RGB color.
+     *
+     * @return array
+     */
+    protected function generateColor()
+    {
+        return [
+            mt_rand(5, 50),
+            mt_rand(5, 50),
+            mt_rand(5, 50),
+        ];
+    }
 
-	private function shuffleAssoc(array $array)
-	{
-		$keys = array_keys($array); 
+    public function getSession()
+    {
+        return $this->session;
+    }
 
-		shuffle($keys);
+    public function getImageInstance()
+    {
+        return $this->image;
+    }
 
-		$random = [];
+    private function shuffleAssoc(array $array)
+    {
+        $keys = array_keys($array);
 
-		foreach ($keys as $key) { 
-			$random[$key] = $array[$key]; 
-		}
+        shuffle($keys);
 
-		return $random; 
-	    
-	}
+        $random = [];
+
+        foreach ($keys as $key) {
+            $random[$key] = $array[$key];
+        }
+
+        return $random;
+    }
 }
