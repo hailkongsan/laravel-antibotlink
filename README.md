@@ -20,7 +20,7 @@ Hailkongsan\AntiBotLink\AntiBotLinkServiceProvider::class,
 
 2- The class alias to the aliases array :
 ```php
-'AntiBotLink' => 'Hailkongsan\AntiBotLink\Facades\AntiBotLink::class'
+'AntiBotLink' => Hailkongsan\AntiBotLink\Facades\AntiBotLink::class
 ```
 3- Publish vendor
 
