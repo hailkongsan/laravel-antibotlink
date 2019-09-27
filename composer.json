@@ -4,11 +4,22 @@
     "license": "MIT",
     "minimum-stability": "dev",
     "require": {
-        "intervention/image": "^2.5"
+        "intervention/image": "^2.5",
+        "illuminate/session": "^6.0",
+        "nesbot/carbon": "^2.0"
     },
     "autoload": {
         "psr-4": {
             "Hailkongsan\\AntiBotLink\\": "src/"
+        }
+    },
+    "require-dev": {
+        "orchestra/testbench": "^4.0",
+        "phpunit/phpunit": "^8.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Hailkongsan\\AntiBotLink\\Test\\": "tests"
         }
     },
     "extra": {
@@ -20,5 +31,8 @@
                 "AntiBotLink": "Hailkongsan\\AntiBotLink\\Facades\\AntiBotLink"
             }
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --testdox"
     }
 }

@@ -10,9 +10,9 @@ class AntiBotLink
 	/**
 	 * The Laravel session instace
 	 * 
-	 * @var Illuminate\Support\Facades\Session
+	 * @var \Hailkongsan\AntiBotLink\AntiBotLinkSessionManager
 	 */
-	public $session;
+	protected $session;
 
 	/**
 	 * The Image instace
@@ -37,18 +37,18 @@ class AntiBotLink
 
 	public function __construct()
 	{
-		$this->session = session();
+		$this->session = app(AntiBotLinkSessionManager::class);
 		$this->image = app(Image::class);
 
-		$this->font = $this->getFont();
-		$this->abl = $this->session->get(config('antibotlink.session_key'), []);
+		$this->font = $this->getFontPath();
+		$this->abl = $this->session->get('', []);
 	}
 
 	/**
 	 * Generate captcha
 	 * 
 	 * @param  boolean $force 
-	 * @return boolean         
+	 * @return boolean
 	 */
 	public function generate($force = false)
 	{
@@ -63,59 +63,51 @@ class AntiBotLink
 
 		$this->abl['question'] = $this->drawQuestion(implode(',', Arr::pluck($this->abl['data'], 'question')));
 		
-		$this->storeToSession([
+		$this->session->put([
 			'data' => $this->abl['data'],
 			'links' => $this->getLinks(),
 			'question' => (string) $this->abl['question'],
 			'solution' => trim(implode(' ', Arr::pluck($this->abl['data'], 'solution'))),
-			'expire_at' => now()->addSeconds(config('antibotlink.expire')),
+			'expire_at' => now()->addSeconds(config('antibotlink.expire', 120)),
 		]);
 
 		return true;
 	}
 
-	public function shouldGenerate()
+	protected function shouldGenerate()
 	{
-		return $this->isExpired() 
-			|| !$this->session->has(config('antibotlink.session_key'))
-			|| !$this->session->has(config('antibotlink.session_key').'.links')
-			|| !$this->session->has(config('antibotlink.session_key').'.question')
-			|| !$this->session->has(config('antibotlink.session_key').'.solution');
+		return $this->isExpired()
+			|| !$this->session->has()
+			|| !$this->session->has('links')
+			|| !$this->session->has('question')
+			|| !$this->session->has('solution')
+			|| count($this->session->get('links')) != config('antibotlink.links');
 	}
 
-	public function verify($solution)
+	public function verify($solution): bool
 	{
 		if ($this->isExpired() || empty($solution)) {
 			return false;
 		}
 
-		if ($solution === $this->session->get(config('antibotlink.session_key').'.solution')) {
-			$this->clearSession();
+		if ($solution === $this->session->get('solution')) {
+			$this->session->clear();
+
 			return true;
 		}
 
 		return false;
 	}
 
-	public function clearSession()
+	protected function isExpired()
 	{
-		$this->session->forget(config('antibotlink.session_key'));
-	}
-
-	public function isExpired()
-	{
-		$time = $this->session->get(config('antibotlink.session_key').'.expire_at');
+		$time = $this->session->get('expire_at');
 
 		if (!$time || now() > $time) {
 			return true;
 		}
 
 		return false;
-	}
-
-	public function storeToSession($data)
-	{
-		$this->session->put(config('antibotlink.session_key'), $data);
 	}
 
 	public function renderJS($form_selector, $name = 'antibotlink')
@@ -210,9 +202,9 @@ class AntiBotLink
 	 *
 	 * 
 	 * @param  [type] $question [description]
-	 * @return [type]           [description]
+	 * @return string
 	 */
-	public function drawQuestion($question)
+	protected function drawQuestion($question)
 	{
 		$color = $this->generateColor();
 		$width = $this->getWidth(strlen($question));
@@ -298,11 +290,11 @@ class AntiBotLink
 	/**
 	 * 
 	 */
-	public function generateRandomQuestionAndAnswer($words)
+	protected function generateRandomQuestionAndAnswer($words)
 	{
 		$result = [];
 
-		foreach (Arr::shuffleAssoc($words) as $question => $answer) {
+		foreach ($this->shuffleAssoc($words) as $question => $answer) {
 			if (count($result) >= config('antibotlink.links')) {
 				break;
 			}
@@ -321,7 +313,7 @@ class AntiBotLink
 	 * [getWords description]
 	 * @return [type] [description]
 	 */
-	public function getWords()
+	protected function getWords()
 	{
 		$words = config('antibotlink.words');
 		return Arr::random($words);
@@ -331,7 +323,7 @@ class AntiBotLink
 	 * [drawImage description]
 	 * @return [type] [description]
 	 */
-	public function drawAnswer($answers)
+	protected function drawAnswer($answers)
 	{
 		$images = [];
 
@@ -372,15 +364,15 @@ class AntiBotLink
 		return $images;
 	}
 
-	public function getFont()
+	protected function getFontPath()
 	{
-		$path = config('antibotlink.assets.font_path');
+		$path = __DIR__.'/assets/fonts';
 		$font = Arr::random(array_diff(scandir($path), ['..', '.']));
 
 		return $path . DIRECTORY_SEPARATOR . pathinfo($font, PATHINFO_BASENAME);
 	}
 
-	public function getWidth($length)
+	protected function getWidth($length)
 	{
 		$length = $length == 1 ? $length + 1 : $length;
 
@@ -389,14 +381,41 @@ class AntiBotLink
 
 	/**
 	 * Generate RGB color
+	 * 
 	 * @return array
 	 */
-	public function generateColor()
+	protected function generateColor()
 	{
 		return [
 			mt_rand(5, 50),
 			mt_rand(5, 50),
 			mt_rand(5, 50)
 		];
+	}
+
+	public function getSession()
+	{
+		return $this->session;
+	}
+
+	public function getImageInstance()
+	{
+		return $this->image;
+	}
+
+	private function shuffleAssoc(array $array)
+	{
+		$keys = array_keys($array); 
+
+		shuffle($keys);
+
+		$random = [];
+
+		foreach ($keys as $key) { 
+			$random[$key] = $array[$key]; 
+		}
+
+		return $random; 
+	    
 	}
 }
