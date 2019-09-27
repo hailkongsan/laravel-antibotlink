@@ -25,9 +25,9 @@ Hailkongsan\AntiBotLink\AntiBotLinkServiceProvider::class,
 3- Publish vendor
 
 ```shell
-php artisan vendor:publish --tag=config,public,resource
+php artisan vendor:publish --provider="Hailkongsan\AntiBotLink\AntiBotLinkServiceProvider" --tag="config"
 ```
-
+## Usage
 #### Validation
 ```php
 $validate = Validator::make(Input::all(), [
