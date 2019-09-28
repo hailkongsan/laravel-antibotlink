@@ -264,7 +264,11 @@ class AntiBotLink
     
     public function getQuestion()
     {
-        return $this->abl['question];
+        if (array_key_exists('question', $this->abl)) {
+            return $this->abl['question'];
+        }
+        
+        return;
     }
 
     /**
