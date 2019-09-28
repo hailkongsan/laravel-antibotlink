@@ -261,6 +261,11 @@ class AntiBotLink
 
         return [];
     }
+    
+    public function getQuestion()
+    {
+        return $this->abl['question];
+    }
 
     /**
      * [getInstruction description].
