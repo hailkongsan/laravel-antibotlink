@@ -239,7 +239,7 @@ class AntiBotLink
 
     public function getSolution()
     {
-        return $this->abl['solution'] ?? null;
+        return $this->session->get('solution');
     }
 
     /**
