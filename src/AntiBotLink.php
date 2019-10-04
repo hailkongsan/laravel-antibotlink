@@ -236,9 +236,9 @@ class AntiBotLink
 
         return (string) $image->encode('data-url');
     }
-    
+
     public function getSolution()
-    {   
+    {
         return $this->abl['solution'] ?? null;
     }
 
